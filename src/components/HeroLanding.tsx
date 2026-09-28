@@ -154,7 +154,7 @@ export function HeroLanding({ onStart }: HeroLandingProps) {
         {/* Background */}
         <div className="absolute inset-0">
           <Image
-            src="/images/gym.jpeg"
+            src="/images/gym.jpg"
             alt="Fitness training"
             fill
             priority
@@ -364,7 +364,7 @@ export function HeroLanding({ onStart }: HeroLandingProps) {
 
       <section className="relative h-[55vh] min-h-[450px] overflow-hidden">
         <Image
-          src="/images/running.jpeg"
+          src="/images/running.jpg"
           alt="Athlete running"
           fill
           className="object-cover"
@@ -448,7 +448,7 @@ export function HeroLanding({ onStart }: HeroLandingProps) {
           {/* Image */}
           <div className="relative min-h-[500px]">
             <Image
-              src="/images/workout.jpeg"
+              src="/images/workout.jpg"
               alt="Fitness workout"
               fill
               className="object-cover"

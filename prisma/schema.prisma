@@ -1,0 +1,148 @@
+// FitBuddy Prisma Schema
+// Screenless, haptic-first fitness coach: ESP32 + BNO085 IMU + edge scoring.
+// The device processes motion locally and sends only per-rep features and
+// events (not raw IMU streams) — "process first, transmit later".
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  passwordHash   String
+  deviceId       String?   @unique
+  hostelBlock    String    @default("Hostel Block 4")
+  department     String    @default("General")
+  weightKg       Float?
+  fitPoints      Int       @default(0)
+  currentStreak  Int       @default(0)
+  highestStreak  Int       @default(0)
+  lastActiveDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions     WorkoutSession[]
+  reps         Rep[]
+  calibrations Calibration[]
+  events       ActivityEvent[]
+  meals        MealLog[]
+}
+
+// One set/session of a single exercise. Reps are grouped automatically by the
+// exercise the device recognised; a gap of > 5 minutes starts a new session.
+model WorkoutSession {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise      String   // squat | lunge | pushup | curl | jumping_jack
+  startedAt     DateTime @default(now())
+  lastRepAt     DateTime @default(now())
+  totalReps     Int      @default(0)
+  goodReps      Int      @default(0)
+  moderateReps  Int      @default(0)
+  poorReps      Int      @default(0)
+  formScore     Float    @default(0) // mean rep score 0-100
+  avgTempoMs    Float    @default(0)
+  avgConfidence Float    @default(0) // exercise-recognition confidence
+  fatigueLevel  String   @default("none") // none | possible | likely
+  reps          Rep[]
+
+  @@index([userId, lastRepAt])
+}
+
+model Rep {
+  id         String         @id @default(uuid())
+  sessionId  String
+  session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  index      Int
+  exercise   String
+  confidence Float          @default(1)
+  romDeg     Float          // range of motion of the primary angle
+  tempoMs    Float          // rep duration
+  swayDeg    Float          // instability on the secondary axis
+  peakVel    Float          // peak angular velocity (deg/s)
+  score      Float          // 0-100 form score vs the user's baseline
+  quality    String         // good | moderate | poor
+  cues       String         @default("[]") // JSON array of correction cues
+  calibrated Boolean        @default(false) // scored against a personal baseline?
+  createdAt  DateTime       @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// Personal movement baseline per exercise, built from a calibration set.
+model Calibration {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise  String
+  romDeg    Float
+  romStd    Float
+  tempoMs   Float
+  tempoStd  Float
+  swayDeg   Float
+  swayStd   Float
+  peakVel   Float
+  velStd    Float
+  samples   Int
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, exercise])
+}
+
+// Anti-sedentary, posture/study, recovery and general activity events.
+// type: SEDENTARY_ALERT | CHALLENGE_ISSUED | CHALLENGE_COMPLETED | CHALLENGE_FAILED
+//       | POSTURE_ALERT | RECOVERY_COMPLETED | ACTIVITY
+model ActivityEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  detail    String   @default("{}") // JSON
+  createdAt DateTime @default(now())
+
+  @@index([userId, type, createdAt])
+}
+
+model MealLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  items     String   @default("[]") // JSON
+  calories  Float
+  protein   Float
+  carbs     Float
+  fats      Float
+  source    String   @default("rules") // rules | llm
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model DeviceConfig {
+  id                 String   @id @default(uuid())
+  deviceId           String   @unique
+  mode               String   @default("WORKOUT") // WORKOUT | STUDY | RECOVERY
+  sedentaryAlertMins Int      @default(45)
+  postureAlertSecs   Int      @default(60)
+  challengeType      String   @default("arm_circles")
+  challengeTarget    Int      @default(10)
+  strictFormMode     Boolean  @default(false)
+  hapticFeedback     Boolean  @default(true)
+  hapticIntensity    Int      @default(2) // 1-3
+  confirmPulses      Boolean  @default(true) // buzz on good reps too
+  firmwareVersion    String   @default("unknown")
+  batteryLevel       Int?
+  lastSeenAt         DateTime?
+  updatedAt          DateTime @updatedAt
+}

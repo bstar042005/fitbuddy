@@ -206,12 +206,12 @@ export function HeroLanding({ onStart }: HeroLandingProps) {
                   />
                 </button>
 
-                <a
+                {/* <a
                   href="#technology"
                   className="flex items-center gap-3 rounded-full border border-white/15 px-7 py-4 text-xs font-bold uppercase tracking-wider text-white/70 transition hover:border-white/30 hover:text-white"
                 >
                   How it works
-                </a>
+                </a> */}
               </div>
             </div>
 
@@ -245,7 +245,7 @@ export function HeroLanding({ onStart }: HeroLandingProps) {
 
               {/* Label */}
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/40 px-4 py-2 font-mono text-[9px] uppercase tracking-[0.2em] text-white/35 backdrop-blur-md">
-                3D MODEL / COMING SOON
+                {/* 3D MODEL / COMING SOON */}
               </div>
             </div>
           </div>
